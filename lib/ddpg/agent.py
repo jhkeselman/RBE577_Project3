@@ -34,7 +34,7 @@ class DDPGAgent:
         # Hint: Create Actor and Critic networks and their target networks
         # Target networks should be copies of the main networks
         state_size = config["network"]["state_size"]
-        action_dim = config["network"]["action_dim"]
+        action_dim = config["network"]["state_size"]
         
         self.actor = Actor(state_size, action_dim).to(self.device)
         self.critic = Critic(state_size, action_dim).to(self.device)
@@ -43,23 +43,23 @@ class DDPGAgent:
 
         # TODO: Initialize optimizers
         # Hint: Use Adam optimizer with learning rates from config
-        self.actor_optimizer = None  # Replace with your implementation
-        self.critic_optimizer = None  # Replace with your implementation
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=config["hyperparameters"]["actor_lr"])
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=config["hyperparameters"]["critic_lr"])
 
         # TODO: Initialize replay buffer
         # Hint: Use ReplayBuffer class with buffer_size from config
-        self.replay_buffer = None  # Replace with your implementation
+        self.replay_buffer = ReplayBuffer(config["hyperparameters"]["buffer_size"])
 
         # TODO: Initialize metrics tracker
         # Hint: Use MetricsTracker class
-        self.metrics = None  # Replace with your implementation
+        self.metrics = MetricsTracker()
 
         # TODO: Extract hyperparameters from config
         # Hint: Get gamma, tau, batch_size, exploration_noise, etc.
-        self.gamma = None  # Replace with your implementation
-        self.tau = None  # Replace with your implementation
-        self.batch_size = None  # Replace with your implementation
-        self.exploration_noise = None  # Replace with your implementation
+        self.gamma = config["hyperparameters"]["gamma"]
+        self.tau = config["hyperparameters"]["tau"]
+        self.batch_size = config["hyperparameters"]["batch_size"]
+        self.exploration_noise = config["hyperparameters"]["exploration_noise"]
 
         # Create model directory
         os.makedirs(config["logging"]["model_dir"], exist_ok=True)
@@ -82,43 +82,65 @@ class DDPGAgent:
         # Hint: Get action from actor network, add exploration noise if needed,
         # and clip to action space bounds
         
-        # Your implementation here
-        
-        return None  # Replace with your implementation
+        state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
+        action = self.actor(state).cpu().detach().numpy()[0]
+        if add_noise:
+            action += self.exploration_noise * np.random.randn(*action.shape)
+        return np.clip(action, -1, 1)
 
     def update(self):
         """Update the networks using a batch from the replay buffer."""
         # TODO: Check if replay buffer has enough samples
         # Hint: Return early if buffer size is less than batch_size
-        # Your implementation here
+        if len(self.replay_buffer) < self.batch_size:
+            return 0.0, 0.0
 
         # TODO: Sample a batch from the replay buffer
         # Hint: Use replay_buffer.sample() to get states, actions, rewards, next_states, dones
-        # Your implementation here
+        states, actions, rewards, next_states, dones = self.replay_buffer.sample(self.batch_size)
+        
+        states = torch.FloatTensor(states).to(self.device)
+        actions = torch.FloatTensor(actions).to(self.device)
+        rewards = torch.FloatTensor(rewards).to(self.device).unsqueeze(1)
+        next_states = torch.FloatTensor(next_states).to(self.device)
+        dones = torch.FloatTensor(dones).to(self.device).unsqueeze(1)
 
         # TODO: Update critic
         # Hint: Compute target Q-values using target networks and the Bellman equation
         # Compute current Q-values and the critic loss
-        # Your implementation here
+        next_actions = self.actor_target(next_states)
+        target_Q_values = rewards + self.gamma * (1 - dones) * self.critic_target(next_states, next_actions)
+
+        current_Q_values = self.critic(states, actions)
+        critic_loss = F.mse_loss(current_Q_values, target_Q_values.detach())
+
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
 
         # TODO: Update actor
         # Hint: Compute actor loss as negative of the expected Q-value
-        # Your implementation here
+        actor_loss = -self.critic(states, self.actor(states)).mean()
+
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        self.actor_optimizer.step()
 
         # TODO: Update target networks
         # Hint: Use soft_update to update target networks
-        # Your implementation here
+        soft_update(self.actor, self.actor_target, self.tau)
+        soft_update(self.critic, self.critic_target, self.tau)
 
-        return 0.0, 0.0  # Replace with your implementation
-
+        return critic_loss.item(), actor_loss.item()
+    
     def train(self):
         """Train the agent."""
         # TODO: Extract training parameters from config
         # Hint: Get max_episodes, max_steps, log_interval, save_interval
-        max_episodes = None  # Replace with your implementation
-        max_steps = None  # Replace with your implementation
-        log_interval = None  # Replace with your implementation
-        save_interval = None  # Replace with your implementation
+        max_episodes = self.config["hyperparameters"]["max_episodes"]
+        max_steps = self.config["hyperparameters"]["max_steps"]
+        log_interval = self.config["logging"]["log_interval"]
+        save_interval = self.config["logging"]["save_interval"]
 
         self.logger.project_logger.info(
             f"Starting DDPG training for Kuka pick and place task..."
@@ -133,7 +155,8 @@ class DDPGAgent:
         for episode in range(1, max_episodes + 1):
             # TODO: Reset environment and get initial state
             # Hint: Use env.reset(), setup_camera(), and get_screen()
-            # Your implementation here
+            state = self.env.reset()
+            setup_camera(self.env, self.config)
 
             episode_reward = 0
             episode_critic_loss = 0
@@ -144,19 +167,41 @@ class DDPGAgent:
             # store transition, and update networks
             for step in range(max_steps):
                 # Your implementation here
-                pass
+                action = self.select_action(state)
+                next_state, reward, done, _ = self.env.step(action)
+                self.replay_buffer.add(state, action, reward, next_state, done)
+                episode_reward += reward
+                state = next_state
+
+                critic_loss, actor_loss = self.update()
+                episode_critic_loss += critic_loss
+                episode_actor_loss += actor_loss
+                
+                if done:
+                    break
 
             # TODO: Track metrics
             # Hint: Add episode reward, length, and loss to metrics tracker
-            # Your implementation here
+            self.metrics.add_episode_reward(episode_reward)
+            self.metrics.add_episode_length(step)
+            self.metrics.add_loss("critic", episode_critic_loss)
+            self.metrics.add_loss("actor", episode_actor_loss)
 
             # TODO: Implement logging
             # Hint: Log metrics periodically and save model checkpoints
-            # Your implementation here
+            self.logger.log_episode(
+                episode,
+                episode_reward,
+                step,
+                episode_critic_loss,
+                episode_actor_loss,
+            )
+
+            if episode % save_interval == 0:
+                self.logger.save_model(episode, {"actor": self.actor.state_dict(), "critic": self.critic.state_dict()})
 
         # TODO: Save final model
         # Hint: Save actor, critic, and optimizer states
-        # Your implementation here
 
         self.logger.close()
         self.env.close()
@@ -171,6 +216,22 @@ class DDPGAgent:
         # TODO: Implement evaluation
         # Hint: Run several episodes without exploration noise and return average reward
         
-        # Your implementation here
+        eval_episodes = self.config["logging"]["eval_episodes"]
+        total_reward = 0.0
+
+        for _ in range(eval_episodes):
+            state = self.env.reset()
+            episode_reward = 0.0
+
+            while True:
+                action = self.select_action(state, add_noise=False)
+                next_state, reward, done, _ = self.env.step(action)
+                episode_reward += reward
+                state = next_state
+
+                if done:
+                    break
+
+            total_reward += episode_reward
         
-        return 0.0  # Replace with your implementation
+        return total_reward / eval_episodes

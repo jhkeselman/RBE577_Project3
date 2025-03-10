@@ -60,8 +60,9 @@ def make_env(config, worker_id=0, test=False):
     setup_camera(env, config)
 
     # TODO:Define observation and action spaces
-    env.observation_space = None
-    env.action_space = None
+    obs_shape = (config["network"]["state_size"][0], config["network"]["state_size"][1])
+    env.observation_space = spaces.Box(low = 0, high = 1, shape = obs_shape, dtype=np.uint8)
+    env.action_space = spaces.Box(low = -1, high = 1, shape=(config["network"].get("action_dim", 1),), dtype=np.float32)
 
     return env
 
