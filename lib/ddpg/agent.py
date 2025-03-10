@@ -28,18 +28,18 @@ class DDPGAgent:
 
         # TODO: Create environment
         # Hint: Use make_env function with config, worker_id=0, and test=False
-        self.env = None  # Replace with your implementation
+        self.env = make_env(config, worker_id=0, test=False)
 
         # TODO: Initialize networks (actor, critic, and their targets)
         # Hint: Create Actor and Critic networks and their target networks
         # Target networks should be copies of the main networks
         state_size = config["network"]["state_size"]
-        action_dim = None  # Replace with your implementation
+        action_dim = config["network"]["action_dim"]
         
-        self.actor = None  # Replace with your implementation
-        self.critic = None  # Replace with your implementation
-        self.actor_target = None  # Replace with your implementation
-        self.critic_target = None  # Replace with your implementation
+        self.actor = Actor(state_size, action_dim).to(self.device)
+        self.critic = Critic(state_size, action_dim).to(self.device)
+        self.actor_target = deepcopy(self.actor).to(self.device)
+        self.critic_target = deepcopy(self.critic).to(self.device)
 
         # TODO: Initialize optimizers
         # Hint: Use Adam optimizer with learning rates from config
