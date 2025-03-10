@@ -1,0 +1,23 @@
+# DDPG specific configuration
+algorithm: "DDPG"
+
+hyperparameters:
+  buffer_size: 10000
+  batch_size: 64
+  gamma: 0.99
+  tau: 0.001
+  actor_lr: 1.0e-4
+  critic_lr: 1.0e-3
+  max_episodes: 500
+  max_steps: 1000
+  exploration_noise: 0.1
+
+network:
+  state_size: [40, 40]   # height, width of processed image
+  hidden_layers: [128, 64]
+
+logging:
+  log_interval: 10
+  save_interval: 50
+  model_dir: "saved_models"
+  eval_episodes: 3 

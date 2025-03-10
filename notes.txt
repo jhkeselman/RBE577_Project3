@@ -1,0 +1,41 @@
+This is a Assignment we are creating for the course RBE577 - Machine Learning for Robotics.
+
+Students are required to implement the following algorithms:
+
+1. A3C
+2. DDPG
+
+on the KukaDiverseObjectEnv environment.
+
+The repository is organized as follows:
+
+- `A3C.py` - Implementation of the A3C algorithm
+- `DDPG.py` - Implementation of the DDPG algorithm
+- `requirements.txt` - List of dependencies for the project
+
+
+now modify the code to have a proper structure and make it more robust and easier to understand.
+
+
+Folder structure:
+
+config/
+├── a3c.yaml
+├── ddpg.yaml
+└── common.yaml
+
+lib/
+├── a3c/
+├── ddpg/
+
+helpers/
+├── __init__.py
+├── config.py
+├── logger.py
+├── metrics.py
+├── utils.py
+
+requirements.txt
+environment.yml
+SETUP.md 
+README.md 
