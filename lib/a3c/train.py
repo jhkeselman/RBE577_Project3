@@ -26,16 +26,18 @@ def train_a3c():
     # TODO: Create the global network
     # Hint: Use the ActorCritic class with parameters from config
     # The network should be moved to the specified device and shared among processes
-    global_net = None  # Replace with your implementation
+    action_dim = config["network"].get("action_dim", 1)
+    global_net = ActorCritic(config["network"]["state_size"], action_dim, config).to(device)
+    global_net = global_net.share_memory()
 
     # TODO: Create optimizer for the global network
     # Hint: Use Adam optimizer with learning rate from config
-    optimizer = None  # Replace with your implementation
+    optimizer = optim.Adam(global_net.parameters(), lr=config["hyperparameters"]["lr"])
 
     # TODO: Create global episode counter and lock for synchronization
     # Hint: Use mp.Value for the counter and mp.Lock for the lock
-    global_ep = None  # Replace with your implementation
-    lock = None  # Replace with your implementation
+    global_ep = mp.Value("i", 0)
+    lock = mp.Lock()
 
     # Create directory for saving models
     os.makedirs(config["logging"]["model_dir"], exist_ok=True)
@@ -55,10 +57,28 @@ def train_a3c():
     # Hint: Use mp.Process to create workers and pass necessary arguments to worker_process
     # Only worker 0 should get the log and model directories
     processes = []
-    # Your implementation here
+    for worker_id in range(config["hyperparameters"]["num_workers"]):
+        p = mp.Process(
+            target=worker_process,
+            args=(
+                worker_id,
+                global_net,
+                optimizer,
+                global_ep,
+                config["hyperparameters"]["max_episodes"],
+                lock,
+                config,
+                device,
+                log_dir if worker_id == 0 else None,
+                model_dir if worker_id == 0 else None,
+            ),
+        )
+        p.start()
+        processes.append(p)
 
     # TODO: Wait for all processes to finish
-    # Your implementation here
+    for p in processes:
+        p.join()
 
     training_time = time.time() - start_time
     logger.project_logger.info(
@@ -67,7 +87,15 @@ def train_a3c():
 
     # TODO: Save the final trained model
     # Hint: Use torch.save to save the model state dict, optimizer state dict, and episode count
-    # Your implementation here
+    model_path = os.path.join(model_dir, "final_a3c_model.pth")
+    torch.save(
+        {
+            "model_state_dict": global_net.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "global_episode": global_ep.value,
+        },
+        model_path,
+    )
 
     logger.project_logger.info(f"Final model saved to {model_path}. Training complete!")
     logger.close()
