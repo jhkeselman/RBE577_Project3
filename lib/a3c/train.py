@@ -27,7 +27,7 @@ def train_a3c():
     # Hint: Use the ActorCritic class with parameters from config
     # The network should be moved to the specified device and shared among processes
     action_dim = config["network"].get("action_dim", 1)
-    global_net = ActorCritic(config["network"]["state_size"], action_dim, config).to(device)
+    global_net = ActorCritic(config["network"]["state_size"], action_dim, config["network"]["shared_layers"], config["network"]["critic_hidden_layers"], config["network"]["actor_hidden_layers"]).to(device)
     global_net = global_net.share_memory()
 
     # TODO: Create optimizer for the global network

@@ -34,50 +34,58 @@ class ActorCritic(nn.Module):
 
         # TODO: Create convolutional layers for processing image input
         # Hint: Use Conv2d layers with appropriate kernel size, stride, and BatchNorm
-        self.conv1 = None  # Replace with your implementation
-        self.bn1 = None    # Replace with your implementation
-        self.conv2 = None  # Replace with your implementation
-        self.bn2 = None    # Replace with your implementation
-        self.conv3 = None  # Replace with your implementation
-        self.bn3 = None    # Replace with your implementation
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=2)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=2)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=5, stride=2)
+        self.bn3 = nn.BatchNorm2d(64)
 
         def conv2d_size_out(size, kernel_size=5, stride=2):
             return (size - (kernel_size - 1) - 1) // stride + 1
 
         # TODO: Calculate the size of the flattened features after convolution
         # Hint: Use the conv2d_size_out function to calculate the output dimensions
-        convw = None  # Replace with your implementation
-        convh = None  # Replace with your implementation
-        linear_input_size = None  # Replace with your implementation
+        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(state_size[0])))
+        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(state_size[1])))
+        linear_input_size = convw * convh * 64
 
         # TODO: Create shared layers using the build_hidden_layer helper function
         # Hint: The input dimension should be the flattened size from convolutions
-        self.shared_layers = None  # Replace with your implementation
+        self.shared = build_hidden_layer(linear_input_size, shared_layers)
 
         # TODO: Create critic network layers
         # Hint: Use build_hidden_layer for hidden layers and a final Linear layer for the value output
         # If critic_hidden_layers is empty, connect directly from shared layers to output
-        self.critic_hidden = None  # Replace with your implementation
-        self.critic = None  # Replace with your implementation
+        self.critic_hidden = build_hidden_layer(shared_layers[-1] if shared_layers else linear_input_size, critic_hidden_layers)
+        self.critic = nn.Linear(critic_hidden_layers[-1] if critic_hidden_layers else (shared_layers[-1] if shared_layers else linear_input_size), 1)
 
         # TODO: Create actor network layers
         # Hint: Use build_hidden_layer for hidden layers and a final Linear layer for the action output
         # If actor_hidden_layers is empty, connect directly from shared layers to output
-        self.actor_hidden = None  # Replace with your implementation
-        self.actor = None  # Replace with your implementation
+        self.actor_hidden = build_hidden_layer(shared_layers[-1] if shared_layers else linear_input_size, actor_hidden_layers)
+        self.actor = nn.Linear(actor_hidden_layers[-1] if actor_hidden_layers else (shared_layers[-1] if shared_layers else linear_input_size), action_size)
 
         self.tanh = nn.Tanh()
 
         # TODO: Initialize network weights if init_type is provided
         # Hint: Apply the _initialize method to all layers
-        # Your implementation here
+        if self.init_type:
+            self.apply(self._initialize)
 
     def _initialize(self, n):
         """Initialize network weights based on the specified initialization type."""
         if isinstance(n, nn.Linear):
             # TODO: Implement different weight initialization methods based on self.init_type
             # Hint: Use nn.init functions like xavier_uniform_, kaiming_normal_, etc.
-            pass  # Replace with your implementation
+            if self.init_type == "xavier":
+                nn.init.xavier_uniform_(n.weight)
+            elif self.init_type == "kaiming-normal":
+                nn.init.kaiming_normal_(n.weight)
+            elif self.init_type == "orthogonal":
+                nn.init.orthogonal_(n.weight)
+            elif n.bias is not None:
+                nn.init.constant_(n.bias, 0)
 
     def forward(self, state):
         """
@@ -101,18 +109,23 @@ class ActorCritic(nn.Module):
 
         # TODO: Process through convolutional layers
         # Hint: Use ReLU activation with batch normalization
-        x = None  # Replace with your implementation
+        x = F.relu(self.bn1(self.conv1(state)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
 
         # TODO: Flatten the output and pass through shared layers
         # Hint: Use view to flatten and apply_multi_layer for the shared layers
-        x = None  # Replace with your implementation
+        x = x.view(x.size(0), -1)
+        x = apply_multi_layer(self.shared_layers, x) if self.shared_layers else x
 
         # TODO: Compute value (critic output)
         # Hint: Process through critic_hidden if it exists, then through critic layer
-        value = None  # Replace with your implementation
+        value = apply_multi_layer(self.critic_hidden, x) if self.critic_hidden else x
+        value = self.critic(value)
 
         # TODO: Compute action mean (actor output)
         # Hint: Process through actor_hidden if it exists, then through actor layer with tanh
-        action_mean = None  # Replace with your implementation
+        action_mean = apply_multi_layer(self.actor_hidden, x) if self.actor_hidden else x
+        action_mean = self.tanh(self.actor(action_mean))
 
         return action_mean, value
