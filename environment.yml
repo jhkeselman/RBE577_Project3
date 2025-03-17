@@ -142,8 +142,8 @@ dependencies:
       - fonttools==4.56.0
       - fsspec==2025.2.0
       - future==1.0.0
-      - gym==0.21.0
-      - gym-notices==0.0.8
+      # - gym==0.21.0
+      # - gym-notices==0.0.8
       - idna==3.10
       - importlib-metadata==8.5.0
       - jinja2==3.1.5
@@ -174,9 +174,9 @@ dependencies:
       - sympy==1.13.3
       - tensorboardx==2.5.1
       - tomli==2.2.1
-      - torch==2.1.0+cu121
-      - torchaudio==2.1.0+cu121
-      - torchvision==0.16.0+cu121
+      # - torch==2.1.0+cu121
+      # - torchaudio==2.1.0+cu121
+      # - torchvision==0.16.0+cu121
       - tqdm==4.67.1
       - triton==2.1.0
       - typing-extensions==4.12.2
