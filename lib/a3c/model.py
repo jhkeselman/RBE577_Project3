@@ -52,13 +52,14 @@ class ActorCritic(nn.Module):
 
         # TODO: Create shared layers using the build_hidden_layer helper function
         # Hint: The input dimension should be the flattened size from convolutions
-        print(f"shared_layers: {shared_layers}")
-        print(f"linear_input_size: {linear_input_size}")
         self.shared = build_hidden_layer(linear_input_size, shared_layers)
 
         # TODO: Create critic network layers
         # Hint: Use build_hidden_layer for hidden layers and a final Linear layer for the value output
         # If critic_hidden_layers is empty, connect directly from shared layers to output
+        print(f"linear_input_size: {linear_input_size}")
+        print(f"shared_layers: {shared_layers}")
+        print(f"critic_hidden_layers: {critic_hidden_layers}")
         self.critic_hidden = build_hidden_layer(shared_layers[-1] if shared_layers else linear_input_size, critic_hidden_layers)
         self.critic = nn.Linear(critic_hidden_layers[-1] if critic_hidden_layers else (shared_layers[-1] if shared_layers else linear_input_size), 1)
 
