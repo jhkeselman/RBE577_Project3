@@ -51,7 +51,7 @@ def worker_process(
     # TODO: Create local network
     # Hint: Create a copy of the ActorCritic network with the same parameters as global_net
     action_dim = env.action_space.shape[0] if hasattr(env.action_space, 'shape') else env.action_space.n
-    local_net = ActorCritic(config["network"]["state_size"], action_dim, shared_layers=config["network"]["shared_layers"]).to(device)
+    local_net = ActorCritic(config["network"]["state_size"], action_dim, shared_layers=config["network"]["shared_layers"], critic_hidden_layers=config["network"]["critic_hidden_layers"]).to(device)
     # TODO: Create metrics tracker
     # Hint: Use MetricsTracker class
     metrics = MetricsTracker()
