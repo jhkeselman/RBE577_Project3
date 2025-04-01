@@ -87,7 +87,7 @@ def worker_process(
         # Hint: Ussssse env.reset(), setup_camera(), and get_screen()
         state = env.reset()
         setup_camera(env, config)
-        state = get_screen(env).to(device)
+        state = get_screen(env, device)
 
         episode_reward = 0
         done = False
