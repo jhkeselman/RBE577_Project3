@@ -34,7 +34,7 @@ class DDPGAgent:
         # Hint: Create Actor and Critic networks and their target networks
         # Target networks should be copies of the main networks
         state_size = config["network"]["state_size"]
-        action_dim = 2
+        action_dim = int(np.prod([1,3])) 
         
         self.actor = Actor(state_size, action_dim).to(self.device)
         self.critic = Critic(state_size, action_dim).to(self.device)
