@@ -97,7 +97,7 @@ def worker_process(
         for t in range(t_max):
             # TODO: Get action and value from local network
             # Hint: Pass state through local_net and process the outputs
-            state_tensor = torch.FloatTensor(state).to(device).unsqueeze(0)
+            state_tensor = torch.FloatTensor(state).to(device)
             policy, value = local_net(state_tensor)
             action_dist = torch.distributions.Categorical(policy)
 
