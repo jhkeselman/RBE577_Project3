@@ -28,6 +28,12 @@ class ActorCritic(nn.Module):
             init_type (str): Weight initialization type
         """
         super(ActorCritic, self).__init__()
+        self.state_size = state_size
+        self.action_size = action_size
+        self.shared_layers = shared_layers
+        self.critic_hidden_layers = critic_hidden_layers
+        self.actor_hidden_layers = actor_hidden_layers
+        self.seed = seed
         self.init_type = init_type
         torch.manual_seed(seed)
         self.sigma = nn.Parameter(torch.zeros(action_size))
