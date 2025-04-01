@@ -84,9 +84,9 @@ def worker_process(
         entropies = []
 
         # TODO: Reset environment and get initial state
-        # Hint: Use env.reset(), setup_camera(), and get_screen()
+        # Hint: Ussssse env.reset(), setup_camera(), and get_screen()
         state = env.reset()
-        setup_camera(env)
+        setup_camera(env, config)
         state = get_screen(env).to(device)
 
         episode_reward = 0
