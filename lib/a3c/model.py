@@ -122,7 +122,7 @@ class ActorCritic(nn.Module):
         # TODO: Flatten the output and pass through shared layers
         # Hint: Use view to flatten and apply_multi_layer for the shared layers
         x = torch.flatten(x,1)
-        x = F.relu(self.fc1(x))
+        x = F.relu(self.conv3(x))
 
         # TODO: Compute value (critic output)
         # Hint: Process through critic_hidden if it exists, then through critic layer
