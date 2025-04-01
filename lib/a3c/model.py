@@ -58,18 +58,18 @@ class ActorCritic(nn.Module):
 
         # TODO: Create shared layers using the build_hidden_layer helper function
         # Hint: The input dimension should be the flattened size from convolutions
-        self.shared = build_hidden_layer(linear_input_size, shared_layers)
+        self.shared = build_hidden_layer(linear_input_size, shared_layers) if shared_layers else nn.Identity()
 
         # TODO: Create critic network layers
         # Hint: Use build_hidden_layer for hidden layers and a final Linear layer for the value output
         # If critic_hidden_layers is empty, connect directly from shared layers to output
-        self.critic_hidden = build_hidden_layer(shared_layers[-1] if shared_layers else linear_input_size, critic_hidden_layers)
+        self.critic_hidden = build_hidden_layer(shared_layers[-1], critic_hidden_layers) if critic_hidden_layers else nn.Identity()
         self.critic = nn.Linear(critic_hidden_layers[-1] if critic_hidden_layers else (shared_layers[-1] if shared_layers else linear_input_size), 1)
 
         # TODO: Create actor network layers
         # Hint: Use build_hidden_layer for hidden layers and a final Linear layer for the action output
         # If actor_hidden_layers is empty, connect directly from shared layers to output
-        self.actor_hidden = build_hidden_layer(shared_layers[-1] if shared_layers else linear_input_size, actor_hidden_layers)
+        self.actor_hidden = build_hidden_layer(shared_layers[-1], actor_hidden_layers) if actor_hidden_layers else nn.Identity()
         self.actor = nn.Linear(actor_hidden_layers[-1] if actor_hidden_layers else (shared_layers[-1] if shared_layers else linear_input_size), action_size)
 
         self.tanh = nn.Tanh()
@@ -122,7 +122,7 @@ class ActorCritic(nn.Module):
         # TODO: Flatten the output and pass through shared layers
         # Hint: Use view to flatten and apply_multi_layer for the shared layers
         x = x.view(x.size(0), -1)
-        x = apply_multi_layer(self.shared_layers, x) if self.shared_layers else x
+        x = apply_multi_layer(self.shared, x) if self.shared else x
 
         # TODO: Compute value (critic output)
         # Hint: Process through critic_hidden if it exists, then through critic layer
@@ -132,6 +132,6 @@ class ActorCritic(nn.Module):
         # TODO: Compute action mean (actor output)
         # Hint: Process through actor_hidden if it exists, then through actor layer with tanh
         action_mean = apply_multi_layer(self.actor_hidden, x) if self.actor_hidden else x
-        action_mean = self.tanh(self.actor(action_mean))
+        action_mean = torch.tanh(self.actor(action_mean))
 
         return action_mean, value
