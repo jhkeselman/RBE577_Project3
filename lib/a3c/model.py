@@ -40,12 +40,15 @@ class ActorCritic(nn.Module):
 
         # TODO: Create convolutional layers for processing image input
         # Hint: Use Conv2d layers with appropriate kernel size, stride, and BatchNorm
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=2)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=8, stride=2)
         self.bn1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=2)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=8, stride=2)
         self.bn2 = nn.BatchNorm2d(64)
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=5, stride=2)
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=8, stride=2)
         self.bn3 = nn.BatchNorm2d(64)
+
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(64 * 7 * 7, 512)
 
         def conv2d_size_out(size, kernel_size=5, stride=2):
             return (size - (kernel_size - 1) - 1) // stride + 1
@@ -121,8 +124,8 @@ class ActorCritic(nn.Module):
 
         # TODO: Flatten the output and pass through shared layers
         # Hint: Use view to flatten and apply_multi_layer for the shared layers
-        x = torch.flatten(x,1)
-        x = F.relu(self.conv3(x))
+        x = self.flatten(x)
+        x = F.relu(self.fc1(x))
 
         # TODO: Compute value (critic output)
         # Hint: Process through critic_hidden if it exists, then through critic layer
