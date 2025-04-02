@@ -95,30 +95,27 @@ def worker_process(
         # TODO: Collect experience for t_max steps or until done
         # Hint: Run the environment for t_max steps, collecting experience
         for t in range(t_max):
-            policy, value = local_net(state)
+            policy, value = local_net(state.unsqueeze(0))  # Add batch dimension
             policy = F.softmax(policy, dim=1)
-            samples = torch.distributions.Categorical(policy) 
+            samples = torch.distributions.Categorical(policy)
             action = samples.sample()
 
             log_prob = samples.log_prob(action)
             entropy = samples.entropy()
 
             _, reward, done, _ = env.step(action.item()) 
-            next_state = get_screen(env, device)      
+            next_state = get_screen(env, device)  
 
-            # TODO: Store experience
-            # Hint: Append log_prob, value, reward, and entropy to their respective lists
+            if len(next_state.shape) == 2:  # If next_state is missing batch dimension
+                next_state = next_state.unsqueeze(0).unsqueeze(0)  # Add batch + channel dims
+
             log_probs.append(log_prob)
             values.append(value)
             rewards.append(reward)
             entropies.append(entropy)
-        
-            # TODO: Update state and check if episode is done
+
             episode_reward += reward
             state = next_state
-
-            if done:
-                break
 
         # TODO: Bootstrap value for incomplete episode
         # Hint: If episode is not done, estimate the value of the last state
