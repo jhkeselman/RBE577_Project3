@@ -95,24 +95,16 @@ def worker_process(
         # TODO: Collect experience for t_max steps or until done
         # Hint: Run the environment for t_max steps, collecting experience
         for t in range(t_max):
-            # TODO: Get action and value from local network
-            # Hint: Pass state through local_net and process the outputs
-            state_tensor = torch.FloatTensor(state).to(device)
-            policy, value = local_net(state_tensor)
-            action_dist = torch.distributions.Categorical(policy)
+            policy, value = local_net(state)
+            policy = F.softmax(policy, dim=1)
+            samples = torch.distributions.Categorical(policy) 
+            action = samples.sample()
 
-            # TODO: Sample action from the policy distribution
-            # Hint: Use multinomial sampling from the action probabilities
-            action = action_dist.sample()
+            log_prob = samples.log_prob(action)
+            entropy = samples.entropy()
 
-            # TODO: Convert discrete action to continuous action space
-            # Hint: Map discrete actions to continuous actions for the Kuka environment
-            log_prob = action_dist.log_prob(action)
-            entropy = action_dist.entropy()
-
-            # TODO: Take action in environment and observe next state and reward
-            # Hint: Use env.step() and get_screen()
-            next_state, reward, done, _ = env.step(action.item())
+            _, reward, done, _ = env.step(action.item()) 
+            next_state = get_screen(env, device)      
 
             # TODO: Store experience
             # Hint: Append log_prob, value, reward, and entropy to their respective lists
